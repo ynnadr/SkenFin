@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalkulator Skenario Finansial 5 Tahun</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --font-color: #333;
+            --card-bg: #ffffff;
+            --primary-color: #007bff;
+            --scenario-a-color: #007bff;
+            --scenario-b-color: #28a745;
+            --border-color: #e0e0e0;
+            --shadow: 0 4px 8px rgba(0,0,0,0.05);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--font-color);
+            margin: 0;
+            padding: 20px;
+            font-size: 16px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            gap: 25px;
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            text-align: center;
+            margin: 0;
+            padding: 10px 0;
+        }
+
+        h1 {
+            font-size: 2em;
+        }
+        
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        h3 {
+            font-size: 1.2em;
+            text-align: left;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+        }
+        
+        #input-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .input-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-item label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .input-item input, .input-item select {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 1em;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #calculateBtn {
+            grid-column: 1 / -1;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: white;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        #calculateBtn:hover {
+            background-color: #0056b3;
+        }
+
+        #results-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        .scenario-card {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .scenario-card h3 {
+            padding-bottom: 10px;
+            border-bottom: 2px solid;
+        }
+
+        #scenario-a h3 { border-color: var(--scenario-a-color); color: var(--scenario-a-color); }
+        #scenario-b h3 { border-color: var(--scenario-b-color); color: var(--scenario-b-color); }
+
+        .result-item {
+            font-size: 1em;
+        }
+        .result-item strong {
+            font-weight: 600;
+        }
+        .total-asset {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-top: auto;
+            text-align: center;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        #total-asset-a { background-color: #e6f2ff; color: var(--scenario-a-color); }
+        #total-asset-b { background-color: #eaf6ec; color: var(--scenario-b-color); }
+
+        #charts {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 350px;
+        }
+
+        #stress-test {
+            text-align: center;
+        }
+        #stress-test .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .stress-btn {
+            padding: 10px 15px;
+            border: 1px solid #ffc107;
+            background-color: #fff3cd;
+            color: #856404;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        #summary-checklist {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        #summary-text {
+            line-height: 1.6;
+        }
+
+        ul.checklist {
+            list-style-type: none;
+            padding: 0;
+        }
+        ul.checklist li {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        ul.checklist input[type="checkbox"] {
+            margin-right: 10px;
+        }
+        
+        @media (max-width: 900px) {
+            #results-dashboard, #charts, #summary-checklist {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Kalkulator Skenario Finansial 5 Tahun</h1>
+        </header>
+
+        <!-- Bagian 1: Panel Input Parameter -->
+        <section id="input-panel-card" class="card">
+            <h2>Dasbor Kontrol Anda</h2>
+            <div id="input-panel">
+                <div class="input-group">
+                    <h3>Data Pribadi</h3>
+                    <div class="input-item">
+                        <label for="modalAwal">Modal Awal (Rp)</label>
+                        <input type="number" id="modalAwal" value="200000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="penghasilan">Target Penghasilan Freelance/Bulan (Nett) (Rp)</label>
+                        <input type="number" id="penghasilan" value="8000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="periode">Periode Simulasi (Tahun)</label>
+                        <input type="number" id="periode" value="5" readonly>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <h3>Skenario A: Sewa & Investasi</h3>
+                    <div class="input-item">
+                        <label for="biayaSewa">Biaya Sewa/Kost per Bulan (Rp)</label>
+                        <input type="number" id="biayaSewa" value="2000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="biayaHidupA">Biaya Hidup per Bulan (di luar sewa) (Rp)</label>
+                        <input type="number" id="biayaHidupA" value="2500000">
+                    </div>
+                    <div class="input-item">
+                        <label for="alokasiInvestasi">Alokasi Dana Investasi (Rp)</label>
+                        <input type="number" id="alokasiInvestasi" value="100000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="returnInvestasi">Estimasi Return Investasi per Tahun (%)</label>
+                        <input type="range" id="returnInvestasi" min="1" max="15" value="5" oninput="this.nextElementSibling.value = this.value + '%'">
+                        <output>5%</output>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <h3>Skenario B: Beli Properti</h3>
+                    <div class="input-item">
+                        <label for="hargaProperti">Harga Beli Properti (Cash) (Rp)</label>
+                        <input type="number" id="hargaProperti" value="100000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="biayaTambahan">Biaya Tambahan (Notaris, Pajak, dll.) (Rp)</label>
+                        <input type="number" id="biayaTambahan" value="7000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="biayaHidupB">Biaya Hidup per Bulan (di lokasi baru) (Rp)</label>
+                        <input type="number" id="biayaHidupB" value="2000000">
+                    </div>
+                    <div class="input-item">
+                        <label for="returnProperti">Estimasi Pertumbuhan Nilai Properti per Tahun (%)</label>
+                        <input type="range" id="returnProperti" min="1" max="15" value="3" oninput="this.nextElementSibling.value = this.value + '%'">
+                        <output>3%</output>
+                    </div>
+                </div>
+                <button id="calculateBtn">Hitung & Bandingkan Skenario</button>
+            </div>
+        </section>
+
+        <!-- Bagian 2: Dasbor Visual Perbandingan Hasil -->
+        <section id="results-dashboard" class="card">
+            <div id="scenario-a" class="scenario-card">
+                <h3>Skenario A: Sewa & Investasi</h3>
+                <div id="arusKasA" class="result-item"></div>
+                <div id="proyeksiA" class="result-item"></div>
+                <div id="total-asset-a" class="total-asset">Rp 0</div>
+            </div>
+            <div id="scenario-b" class="scenario-card">
+                <h3>Skenario B: Beli Properti</h3>
+                <div id="arusKasB" class="result-item"></div>
+                <div id="proyeksiB" class="result-item"></div>
+                <div id="total-asset-b" class="total-asset">Rp 0</div>
+            </div>
+        </section>
+        
+        <section id="charts" class="card">
+            <div class="chart-container">
+                 <canvas id="netWorthChart"></canvas>
+            </div>
+            <div class="chart-container">
+                 <canvas id="assetCompositionChart"></canvas>
+            </div>
+        </section>
+
+        <!-- Bagian 3: Analisis Risiko & Uji Stres -->
+        <section id="stress-test" class="card">
+            <h2>Bagaimana Jika...? (Simulasi Uji Stres)</h2>
+            <div class="buttons">
+                <button id="stressNoIncome" class="stress-btn">Tidak Ada Pemasukan Selama 6 Bulan</button>
+                <button id="stressRepairs" class="stress-btn">Ada Biaya Perbaikan Rumah Rp 15 Juta</button>
+                <button id="stressMarketDown" class="stress-btn">Pasar Investasi Turun 10%</button>
+            </div>
+        </section>
+
+        <!-- Bagian 4: Ringkasan & Checklist Tindakan -->
+        <section id="summary-checklist" class="card">
+            <div id="summary">
+                <h2>Ringkasan & Rekomendasi</h2>
+                <p id="summary-text"></p>
+            </div>
+            <div id="checklist">
+                <h2>Checklist Tindakan (Untuk Opsi Properti)</h2>
+                <ul class="checklist">
+                    <li><input type="checkbox">Cek legalitas properti (SHM, IMB, PBB).</li>
+                    <li><input type="checkbox">Lakukan tes kecepatan internet di lokasi.</li>
+                    <li><input type="checkbox">Survei stabilitas listrik dan sinyal seluler.</li>
+                    <li><input type="checkbox">Periksa kondisi fisik bangunan dengan ahli.</li>
+                    <li><input type="checkbox">Hitung total biaya akuisisi (pajak, notaris, dll.).</li>
+                    <li><input type="checkbox">Alokasikan dana darurat dari sisa modal.</li>
+                </ul>
+            </div>
+        </section>
+
+    </div>
+
+    <script>
+        // --- GLOBAL VARIABLES ---
+        let netWorthChart, assetCompositionChart;
+        let lastResults = {}; // To store results for stress tests
+
+        // --- UTILITY FUNCTION ---
+        const formatCurrency = (value) => {
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(value);
+        };
+
+        // --- CORE CALCULATION FUNCTION ---
+        function calculateAndDisplayResults() {
+            // --- Get all input values ---
+            const modalAwal = parseFloat(document.getElementById('modalAwal').value);
+            const penghasilan = parseFloat(document.getElementById('penghasilan').value);
+            const periode = parseInt(document.getElementById('periode').value);
+            const bulan = periode * 12;
+
+            // Scenario A inputs
+            const biayaSewa = parseFloat(document.getElementById('biayaSewa').value);
+            const biayaHidupA = parseFloat(document.getElementById('biayaHidupA').value);
+            const alokasiInvestasi = parseFloat(document.getElementById('alokasiInvestasi').value);
+            const returnInvestasi = parseFloat(document.getElementById('returnInvestasi').value) / 100;
+            
+            // Scenario B inputs
+            const hargaProperti = parseFloat(document.getElementById('hargaProperti').value);
+            const biayaTambahan = parseFloat(document.getElementById('biayaTambahan').value);
+            const biayaHidupB = parseFloat(document.getElementById('biayaHidupB').value);
+            const returnProperti = parseFloat(document.getElementById('returnProperti').value) / 100;
+
+            // --- SCENARIO A: SEWA & INVESTASI ---
+            const sisaModalA = modalAwal - alokasiInvestasi;
+            const pengeluaranBulananA = biayaSewa + biayaHidupA;
+            const tabunganBulananA = penghasilan - pengeluaranBulananA;
+            const totalTabunganA = tabunganBulananA * bulan;
+
+            let nilaiInvestasiAkhirA = alokasiInvestasi;
+            let netWorthDataA = [modalAwal];
+            for (let i = 0; i < periode; i++) {
+                nilaiInvestasiAkhirA *= (1 + returnInvestasi);
+                let currentNetWorth = nilaiInvestasiAkhirA + sisaModalA + (tabunganBulananA * (i + 1) * 12);
+                netWorthDataA.push(currentNetWorth);
+            }
+            const totalAsetA = nilaiInvestasiAkhirA + totalTabunganA + sisaModalA;
+            
+            // --- SCENARIO B: BELI PROPERTI ---
+            const danaTersisaB = modalAwal - hargaProperti - biayaTambahan;
+            const pengeluaranBulananB = biayaHidupB;
+            const tabunganBulananB = penghasilan - pengeluaranBulananB;
+            const totalTabunganB = tabunganBulananB * bulan;
+
+            let nilaiPropertiAkhirB = hargaProperti;
+            let netWorthDataB = [modalAwal];
+             for (let i = 0; i < periode; i++) {
+                nilaiPropertiAkhirB *= (1 + returnProperti);
+                let currentNetWorth = nilaiPropertiAkhirB + danaTersisaB + (tabunganBulananB * (i + 1) * 12);
+                netWorthDataB.push(currentNetWorth);
+            }
+            const totalAsetB = nilaiPropertiAkhirB + totalTabunganB + danaTersisaB;
+
+            // --- STORE RESULTS FOR STRESS TESTS ---
+            lastResults = {
+                pengeluaranBulananA, pengeluaranBulananB, totalAsetA, totalAsetB,
+                cashA: totalTabunganA + sisaModalA,
+                cashB: totalTabunganB + danaTersisaB,
+                investmentValueA: nilaiInvestasiAkhirA,
+                propertyValueB: nilaiPropertiAkhirB,
+                alokasiInvestasi
+            };
+            
+            // --- DISPLAY RESULTS ---
+            // Arus Kas
+            document.getElementById('arusKasA').innerHTML = `
+                <strong>Analisis Arus Kas Bulanan:</strong><br>
+                Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananA)}</span>`;
+            document.getElementById('arusKasB').innerHTML = `
+                <strong>Analisis Arus Kas Bulanan:</strong><br>
+                Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananB)}</span>`;
+
+            // Proyeksi
+            document.getElementById('proyeksiA').innerHTML = `
+                <strong>Proyeksi ${periode} Tahun:</strong><br>
+                Total Tabungan Terkumpul: ${formatCurrency(totalTabunganA)}<br>
+                Nilai Investasi Akhir: ${formatCurrency(nilaiInvestasiAkhirA)}`;
+            document.getElementById('proyeksiB').innerHTML = `
+                <strong>Proyeksi ${periode} Tahun:</strong><br>
+                Total Tabungan Terkumpul: ${formatCurrency(totalTabunganB)}<br>
+                Nilai Properti Akhir: ${formatCurrency(nilaiPropertiAkhirB)}`;
+            
+            // Total Aset
+            document.getElementById('total-asset-a').textContent = formatCurrency(totalAsetA);
+            document.getElementById('total-asset-b').textContent = formatCurrency(totalAsetB);
+            
+            // --- RENDER CHARTS ---
+            renderNetWorthChart(netWorthDataA, netWorthDataB, periode);
+            renderAssetCompositionChart();
+
+            // --- UPDATE SUMMARY ---
+            updateSummary();
+        }
+
+        // --- CHART RENDERING FUNCTIONS ---
+        function renderNetWorthChart(dataA, dataB, periode) {
+            const ctx = document.getElementById('netWorthChart').getContext('2d');
+            const labels = Array.from({ length: periode + 1 }, (_, i) => `Tahun ${i}`);
+
+            if (netWorthChart) {
+                netWorthChart.destroy();
+            }
+
+            netWorthChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Skenario A: Sewa & Investasi',
+                        data: dataA,
+                        borderColor: 'var(--scenario-a-color)',
+                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }, {
+                        label: 'Skenario B: Beli Properti',
+                        data: dataB,
+                        borderColor: 'var(--scenario-b-color)',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Proyeksi Pertumbuhan Kekayaan Bersih'
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderAssetCompositionChart() {
+            const ctx = document.getElementById('assetCompositionChart').getContext('2d');
+            
+            if (assetCompositionChart) {
+                assetCompositionChart.destroy();
+            }
+
+            assetCompositionChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Skenario A', 'Skenario B'],
+                    datasets: [{
+                        label: 'Komposisi Aset',
+                        data: [lastResults.totalAsetA, lastResults.totalAsetB],
+                        backgroundColor: [
+                            'var(--scenario-a-color)',
+                            'var(--scenario-b-color)'
+                        ],
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Perbandingan Total Aset Akhir'
+                        }
+                    }
+                }
+            });
+        }
+        
+        // --- SUMMARY FUNCTION ---
+        function updateSummary() {
+            const summaryEl = document.getElementById('summary-text');
+            const diff = lastResults.totalAsetB - lastResults.totalAsetA;
+            const percentageDiff = ((diff / lastResults.totalAsetA) * 100).toFixed(0);
+
+            let text = `Berdasarkan parameter Anda, `;
+            if (diff > 0) {
+                text += `<b>Skenario B (Beli Properti)</b> menghasilkan pertumbuhan aset total <b>${formatCurrency(diff)} (${percentageDiff}%) lebih tinggi</b> dalam 5 tahun. Skenario ini juga memberikan arus kas bulanan yang lebih kuat karena menghilangkan biaya sewa.`;
+            } else {
+                text += `<b>Skenario A (Sewa & Investasi)</b> menghasilkan pertumbuhan aset total <b>${formatCurrency(Math.abs(diff))} (${Math.abs(percentageDiff)}%) lebih tinggi</b> dalam 5 tahun. Skenario ini memberikan likuiditas yang lebih baik karena dana tidak terikat pada properti.`;
+            }
+            text += ` Pertimbangkan dengan matang antara potensi pertumbuhan dan kebutuhan likuiditas Anda.`
+            summaryEl.innerHTML = text;
+        }
+
+        // --- STRESS TEST FUNCTIONS ---
+        function stressTestNoIncome() {
+            const runwayA = lastResults.cashA / lastResults.pengeluaranBulananA;
+            const runwayB = lastResults.cashB / lastResults.pengeluaranBulananB;
+            alert(`UJI STRES: Tidak Ada Pemasukan\n\n` +
+                  `Skenario A: Dana tunai Anda cukup untuk bertahan selama ${runwayA.toFixed(1)} bulan.\n` +
+                  `Skenario B: Dana tunai Anda cukup untuk bertahan selama ${runwayB.toFixed(1)} bulan.`);
+        }
+
+        function stressTestRepairs() {
+            const repairCost = 15000000;
+            const newTotalAssetB = lastResults.totalAsetB - repairCost;
+            alert(`UJI STRES: Biaya Perbaikan Rumah\n\n` +
+                  `Biaya perbaikan Rp 15 juta akan mengurangi total aset Skenario B menjadi ${formatCurrency(newTotalAssetB)}.`);
+        }
+
+        function stressTestMarketDown() {
+            const marketDrop = 0.10; // 10%
+            const loss = lastResults.alokasiInvestasi * marketDrop; // Simple loss on principal for illustration
+            const newTotalAssetA = lastResults.totalAsetA - loss;
+             alert(`UJI STRES: Pasar Investasi Turun 10%\n\n` +
+                  `Penurunan pasar akan mengurangi nilai aset Skenario A sekitar ${formatCurrency(loss)}, menjadi ${formatCurrency(newTotalAssetA)}.`);
+        }
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('calculateBtn').addEventListener('click', calculateAndDisplayResults);
+        document.getElementById('stressNoIncome').addEventListener('click', stressTestNoIncome);
+        document.getElementById('stressRepairs').addEventListener('click', stressTestRepairs);
+        document.getElementById('stressMarketDown').addEventListener('click', stressTestMarketDown);
+
+        // --- INITIAL CALCULATION ON PAGE LOAD ---
+        window.addEventListener('load', calculateAndDisplayResults);
+
+    </script>
+</body>
+</html>
