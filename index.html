@@ -10,9 +10,12 @@
             --bg-color: #f4f7f9;
             --font-color: #333;
             --card-bg: #ffffff;
-            --primary-color: #007bff;
-            --scenario-a-color: #007bff;
-            --scenario-b-color: #28a745;
+            --primary-color: #4A5568; /* Warna primer yang lebih netral */
+            
+            /* --- PERUBAHAN WARNA UTAMA DI SINI --- */
+            --scenario-a-color: #FF6347; /* Oranye Terang (Tomato) */
+            --scenario-b-color: #00CED1; /* Teal Cerah (Dark Turquoise) */
+            
             --border-color: #e0e0e0;
             --shadow: 0 4px 8px rgba(0,0,0,0.05);
         }
@@ -109,7 +112,7 @@
         }
         
         #calculateBtn:hover {
-            background-color: #0056b3;
+            background-color: #2D3748;
         }
 
         #results-dashboard {
@@ -146,8 +149,9 @@
             padding: 15px;
             border-radius: 5px;
         }
-        #total-asset-a { background-color: #e6f2ff; color: var(--scenario-a-color); }
-        #total-asset-b { background-color: #eaf6ec; color: var(--scenario-b-color); }
+        /* Warna latar belakang total aset disesuaikan dengan warna baru */
+        #total-asset-a { background-color: #ffebe5; color: var(--scenario-a-color); }
+        #total-asset-b { background-color: #e0f8f8; color: var(--scenario-b-color); }
 
         #charts {
             grid-column: 1 / -1;
@@ -410,33 +414,15 @@
             };
             
             // --- DISPLAY RESULTS ---
-            // Arus Kas
-            document.getElementById('arusKasA').innerHTML = `
-                <strong>Analisis Arus Kas Bulanan:</strong><br>
-                Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananA)}</span>`;
-            document.getElementById('arusKasB').innerHTML = `
-                <strong>Analisis Arus Kas Bulanan:</strong><br>
-                Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananB)}</span>`;
-
-            // Proyeksi
-            document.getElementById('proyeksiA').innerHTML = `
-                <strong>Proyeksi ${periode} Tahun:</strong><br>
-                Total Tabungan Terkumpul: ${formatCurrency(totalTabunganA)}<br>
-                Nilai Investasi Akhir: ${formatCurrency(nilaiInvestasiAkhirA)}`;
-            document.getElementById('proyeksiB').innerHTML = `
-                <strong>Proyeksi ${periode} Tahun:</strong><br>
-                Total Tabungan Terkumpul: ${formatCurrency(totalTabunganB)}<br>
-                Nilai Properti Akhir: ${formatCurrency(nilaiPropertiAkhirB)}`;
-            
-            // Total Aset
+            document.getElementById('arusKasA').innerHTML = `<strong>Analisis Arus Kas Bulanan:</strong><br>Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananA)}</span>`;
+            document.getElementById('arusKasB').innerHTML = `<strong>Analisis Arus Kas Bulanan:</strong><br>Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananB)}</span>`;
+            document.getElementById('proyeksiA').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganA)}<br>Nilai Investasi Akhir: ${formatCurrency(nilaiInvestasiAkhirA)}`;
+            document.getElementById('proyeksiB').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganB)}<br>Nilai Properti Akhir: ${formatCurrency(nilaiPropertiAkhirB)}`;
             document.getElementById('total-asset-a').textContent = formatCurrency(totalAsetA);
             document.getElementById('total-asset-b').textContent = formatCurrency(totalAsetB);
             
-            // --- RENDER CHARTS ---
             renderNetWorthChart(netWorthDataA, netWorthDataB, periode);
             renderAssetCompositionChart();
-
-            // --- UPDATE SUMMARY ---
             updateSummary();
         }
 
@@ -457,14 +443,16 @@
                         label: 'Skenario A: Sewa & Investasi',
                         data: dataA,
                         borderColor: 'var(--scenario-a-color)',
-                        backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                        // --- PERUBAHAN WARNA DI SINI ---
+                        backgroundColor: 'rgba(255, 99, 71, 0.1)',
                         fill: true,
                         tension: 0.1
                     }, {
                         label: 'Skenario B: Beli Properti',
                         data: dataB,
                         borderColor: 'var(--scenario-b-color)',
-                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                         // --- PERUBAHAN WARNA DI SINI ---
+                        backgroundColor: 'rgba(0, 206, 209, 0.1)',
                         fill: true,
                         tension: 0.1
                     }]
@@ -473,10 +461,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: 'Proyeksi Pertumbuhan Kekayaan Bersih'
-                        }
+                        title: { display: true, text: 'Proyeksi Pertumbuhan Kekayaan Bersih' }
                     }
                 }
             });
@@ -496,10 +481,8 @@
                     datasets: [{
                         label: 'Komposisi Aset',
                         data: [lastResults.totalAsetA, lastResults.totalAsetB],
-                        backgroundColor: [
-                            'var(--scenario-a-color)',
-                            'var(--scenario-b-color)'
-                        ],
+                         // --- PERUBAHAN WARNA DI SINI ---
+                        backgroundColor: [ 'var(--scenario-a-color)', 'var(--scenario-b-color)' ],
                         hoverOffset: 4
                     }]
                 },
@@ -507,10 +490,7 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        title: {
-                            display: true,
-                            text: 'Perbandingan Total Aset Akhir'
-                        }
+                        title: { display: true, text: 'Perbandingan Total Aset Akhir' }
                     }
                 }
             });
@@ -549,8 +529,8 @@
         }
 
         function stressTestMarketDown() {
-            const marketDrop = 0.10; // 10%
-            const loss = lastResults.alokasiInvestasi * marketDrop; // Simple loss on principal for illustration
+            const marketDrop = 0.10;
+            const loss = lastResults.alokasiInvestasi * marketDrop;
             const newTotalAssetA = lastResults.totalAsetA - loss;
              alert(`UJI STRES: Pasar Investasi Turun 10%\n\n` +
                   `Penurunan pasar akan mengurangi nilai aset Skenario A sekitar ${formatCurrency(loss)}, menjadi ${formatCurrency(newTotalAssetA)}.`);
@@ -564,7 +544,6 @@
 
         // --- INITIAL CALCULATION ON PAGE LOAD ---
         window.addEventListener('load', calculateAndDisplayResults);
-
     </script>
 </body>
 </html>
