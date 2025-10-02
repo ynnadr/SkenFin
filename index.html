@@ -13,6 +13,7 @@
             --primary-color: #4A5568;
             --scenario-a-color: #FF6347; /* Oranye Terang (Tomato) */
             --scenario-b-color: #00CED1; /* Teal Cerah (Dark Turquoise) */
+            --income-color: #a0aec0; /* Abu-abu untuk Pemasukan */
             --border-color: #e0e0e0;
             --shadow: 0 4px 8px rgba(0,0,0,0.05);
         }
@@ -153,7 +154,7 @@
         #total-asset-a { background-color: #ffebe5; color: var(--scenario-a-color); }
         #total-asset-b { background-color: #e0f8f8; color: var(--scenario-b-color); }
 
-        #charts {
+        .charts-grid {
             grid-column: 1 / -1;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -209,7 +210,7 @@
         }
         
         @media (max-width: 900px) {
-            #results-dashboard, #charts, #summary-checklist {
+            #results-dashboard, .charts-grid, #summary-checklist {
                 grid-template-columns: 1fr;
             }
         }
@@ -237,13 +238,11 @@
                         <input type="number" id="penghasilan" value="8000000">
                     </div>
                     <div class="input-item">
-                        <!-- === PERUBAHAN DI SINI: Input Periode menjadi dinamis === -->
                         <label for="periode">Periode Simulasi (Tahun)</label>
                         <input type="range" id="periode" min="1" max="20" value="5" oninput="this.nextElementSibling.value = this.value + ' tahun'">
                         <output>5 tahun</output>
                     </div>
                 </div>
-
                 <div class="input-group">
                     <h3>Skenario A: Sewa & Investasi</h3>
                     <div class="input-item">
@@ -264,7 +263,6 @@
                         <output>5%</output>
                     </div>
                 </div>
-
                 <div class="input-group">
                     <h3>Skenario B: Beli Properti</h3>
                     <div class="input-item">
@@ -305,12 +303,29 @@
             </div>
         </section>
         
-        <section id="charts" class="card">
-            <div class="chart-container">
-                 <canvas id="netWorthChart"></canvas>
+        <!-- Bagian Grafik Utama -->
+        <section class="card">
+             <h2>Visualisasi Perbandingan Utama</h2>
+             <div class="charts-grid">
+                <div class="chart-container">
+                     <canvas id="netWorthChart"></canvas>
+                </div>
+                <div class="chart-container">
+                     <canvas id="assetCompositionChart"></canvas>
+                </div>
             </div>
-            <div class="chart-container">
-                 <canvas id="assetCompositionChart"></canvas>
+        </section>
+
+        <!-- === BAGIAN BARU: Grafik Analisis Detail === -->
+        <section class="card">
+            <h2>Analisis Detail Tahunan</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="incomeExpenseChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="investmentAssetChart"></canvas>
+                </div>
             </div>
         </section>
 
@@ -347,7 +362,7 @@
 
     <script>
         // --- GLOBAL VARIABLES ---
-        let netWorthChart, assetCompositionChart;
+        let netWorthChart, assetCompositionChart, incomeExpenseChart, investmentAssetChart;
         let lastResults = {};
 
         // --- UTILITY FUNCTION ---
@@ -360,138 +375,135 @@
             // --- Get all input values ---
             const modalAwal = parseFloat(document.getElementById('modalAwal').value);
             const penghasilan = parseFloat(document.getElementById('penghasilan').value);
-            const periode = parseInt(document.getElementById('periode').value); // Periode sekarang dinamis
+            const periode = parseInt(document.getElementById('periode').value);
             const bulan = periode * 12;
 
-            // Scenario A inputs
             const biayaSewa = parseFloat(document.getElementById('biayaSewa').value);
             const biayaHidupA = parseFloat(document.getElementById('biayaHidupA').value);
             const alokasiInvestasi = parseFloat(document.getElementById('alokasiInvestasi').value);
             const returnInvestasi = parseFloat(document.getElementById('returnInvestasi').value) / 100;
             
-            // Scenario B inputs
             const hargaProperti = parseFloat(document.getElementById('hargaProperti').value);
             const biayaTambahan = parseFloat(document.getElementById('biayaTambahan').value);
             const biayaHidupB = parseFloat(document.getElementById('biayaHidupB').value);
             const returnProperti = parseFloat(document.getElementById('returnProperti').value) / 100;
 
-            // --- SCENARIO A: SEWA & INVESTASI ---
+            // --- DATA COLLECTION FOR CHARTS ---
+            const labels = Array.from({ length: periode + 1 }, (_, i) => `Tahun ${i}`);
+            const annualLabels = labels.slice(1); // For annual data like income/expense
+            
+            let netWorthDataA = [modalAwal];
+            let netWorthDataB = [modalAwal];
+            let annualInvestmentValueA = [alokasiInvestasi];
+            let annualPropertyValueB = [hargaProperti];
+            
+            // --- SCENARIO A ---
             const sisaModalA = modalAwal - alokasiInvestasi;
             const pengeluaranBulananA = biayaSewa + biayaHidupA;
             const tabunganBulananA = penghasilan - pengeluaranBulananA;
             const totalTabunganA = tabunganBulananA * bulan;
 
-            let nilaiInvestasiAkhirA = alokasiInvestasi;
-            let netWorthDataA = [modalAwal];
-            for (let i = 0; i < periode; i++) { // Loop berjalan sesuai periode
-                nilaiInvestasiAkhirA *= (1 + returnInvestasi);
-                let currentNetWorth = nilaiInvestasiAkhirA + sisaModalA + (tabunganBulananA * (i + 1) * 12);
+            let currentInvestmentValueA = alokasiInvestasi;
+            for (let i = 0; i < periode; i++) {
+                currentInvestmentValueA *= (1 + returnInvestasi);
+                annualInvestmentValueA.push(currentInvestmentValueA);
+                let currentNetWorth = currentInvestmentValueA + sisaModalA + (tabunganBulananA * (i + 1) * 12);
                 netWorthDataA.push(currentNetWorth);
             }
-            const totalAsetA = nilaiInvestasiAkhirA + totalTabunganA + sisaModalA;
+            const totalAsetA = netWorthDataA[periode];
             
-            // --- SCENARIO B: BELI PROPERTI ---
+            // --- SCENARIO B ---
             const danaTersisaB = modalAwal - hargaProperti - biayaTambahan;
             const pengeluaranBulananB = biayaHidupB;
             const tabunganBulananB = penghasilan - pengeluaranBulananB;
             const totalTabunganB = tabunganBulananB * bulan;
 
-            let nilaiPropertiAkhirB = hargaProperti;
-            let netWorthDataB = [modalAwal];
-             for (let i = 0; i < periode; i++) { // Loop berjalan sesuai periode
-                nilaiPropertiAkhirB *= (1 + returnProperti);
-                let currentNetWorth = nilaiPropertiAkhirB + danaTersisaB + (tabunganBulananB * (i + 1) * 12);
+            let currentPropertyValueB = hargaProperti;
+            for (let i = 0; i < periode; i++) {
+                currentPropertyValueB *= (1 + returnProperti);
+                annualPropertyValueB.push(currentPropertyValueB);
+                let currentNetWorth = currentPropertyValueB + danaTersisaB + (tabunganBulananB * (i + 1) * 12);
                 netWorthDataB.push(currentNetWorth);
             }
-            const totalAsetB = nilaiPropertiAkhirB + totalTabunganB + danaTersisaB;
+            const totalAsetB = netWorthDataB[periode];
 
             // --- STORE RESULTS FOR STRESS TESTS ---
             lastResults = {
                 pengeluaranBulananA, pengeluaranBulananB, totalAsetA, totalAsetB,
                 cashA: totalTabunganA + sisaModalA,
                 cashB: totalTabunganB + danaTersisaB,
-                investmentValueA: nilaiInvestasiAkhirA,
-                propertyValueB: nilaiPropertiAkhirB,
                 alokasiInvestasi
             };
             
             // --- DISPLAY RESULTS ---
             document.getElementById('arusKasA').innerHTML = `<strong>Analisis Arus Kas Bulanan:</strong><br>Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananA)}</span>`;
             document.getElementById('arusKasB').innerHTML = `<strong>Analisis Arus Kas Bulanan:</strong><br>Sisa untuk Ditabung: <span style="color: green; font-weight: bold;">${formatCurrency(tabunganBulananB)}</span>`;
-            document.getElementById('proyeksiA').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganA)}<br>Nilai Investasi Akhir: ${formatCurrency(nilaiInvestasiAkhirA)}`;
-            document.getElementById('proyeksiB').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganB)}<br>Nilai Properti Akhir: ${formatCurrency(nilaiPropertiAkhirB)}`;
+            document.getElementById('proyeksiA').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganA)}<br>Nilai Investasi Akhir: ${formatCurrency(annualInvestmentValueA[periode])}`;
+            document.getElementById('proyeksiB').innerHTML = `<strong>Proyeksi ${periode} Tahun:</strong><br>Total Tabungan Terkumpul: ${formatCurrency(totalTabunganB)}<br>Nilai Properti Akhir: ${formatCurrency(annualPropertyValueB[periode])}`;
             document.getElementById('total-asset-a').textContent = formatCurrency(totalAsetA);
             document.getElementById('total-asset-b').textContent = formatCurrency(totalAsetB);
             
-            renderNetWorthChart(netWorthDataA, netWorthDataB, periode);
+            // --- RENDER ALL CHARTS ---
+            renderNetWorthChart(labels, netWorthDataA, netWorthDataB);
             renderAssetCompositionChart();
+            
+            const annualIncomeData = Array(periode).fill(penghasilan * 12);
+            const annualExpenseDataA = Array(periode).fill(pengeluaranBulananA * 12);
+            const annualExpenseDataB = Array(periode).fill(pengeluaranBulananB * 12);
+
+            renderIncomeExpenseChart(annualLabels, annualIncomeData, annualExpenseDataA, annualExpenseDataB);
+            renderInvestmentAssetChart(labels, annualInvestmentValueA, annualPropertyValueB);
+
             updateSummary(periode);
         }
 
         // --- CHART RENDERING FUNCTIONS ---
-        function renderNetWorthChart(dataA, dataB, periode) {
+        function renderNetWorthChart(labels, dataA, dataB) {
             const ctx = document.getElementById('netWorthChart').getContext('2d');
-            const labels = Array.from({ length: periode + 1 }, (_, i) => `Tahun ${i}`); // Label grafik dinamis
-
-            if (netWorthChart) {
-                netWorthChart.destroy();
-            }
-
+            if (netWorthChart) netWorthChart.destroy();
             netWorthChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Skenario A: Sewa & Investasi',
-                        data: dataA,
-                        borderColor: 'var(--scenario-a-color)',
-                        backgroundColor: 'rgba(255, 99, 71, 0.1)',
-                        fill: true,
-                        tension: 0.1
-                    }, {
-                        label: 'Skenario B: Beli Properti',
-                        data: dataB,
-                        borderColor: 'var(--scenario-b-color)',
-                        backgroundColor: 'rgba(0, 206, 209, 0.1)',
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: true, text: 'Proyeksi Pertumbuhan Kekayaan Bersih' }
-                    }
-                }
+                type: 'line', data: { labels: labels, datasets: [
+                    { label: 'Kekayaan Bersih (A)', data: dataA, borderColor: 'var(--scenario-a-color)', backgroundColor: 'rgba(255, 99, 71, 0.1)', fill: true, tension: 0.1 },
+                    { label: 'Kekayaan Bersih (B)', data: dataB, borderColor: 'var(--scenario-b-color)', backgroundColor: 'rgba(0, 206, 209, 0.1)', fill: true, tension: 0.1 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Proyeksi Pertumbuhan Kekayaan Bersih' }}}
             });
         }
 
         function renderAssetCompositionChart() {
             const ctx = document.getElementById('assetCompositionChart').getContext('2d');
-            
-            if (assetCompositionChart) {
-                assetCompositionChart.destroy();
-            }
-
+            if (assetCompositionChart) assetCompositionChart.destroy();
             assetCompositionChart = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: ['Skenario A', 'Skenario B'],
-                    datasets: [{
-                        label: 'Komposisi Aset',
-                        data: [lastResults.totalAsetA, lastResults.totalAsetB],
-                        backgroundColor: [ 'var(--scenario-a-color)', 'var(--scenario-b-color)' ],
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        title: { display: true, text: 'Perbandingan Total Aset Akhir' }
-                    }
-                }
+                type: 'pie', data: { labels: ['Skenario A', 'Skenario B'], datasets: [{
+                    label: 'Total Aset', data: [lastResults.totalAsetA, lastResults.totalAsetB],
+                    backgroundColor: [ 'var(--scenario-a-color)', 'var(--scenario-b-color)' ], hoverOffset: 4
+                }]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Perbandingan Total Aset Akhir' }}}
+            });
+        }
+
+        function renderIncomeExpenseChart(labels, incomeData, expenseDataA, expenseDataB) {
+            const ctx = document.getElementById('incomeExpenseChart').getContext('2d');
+            if (incomeExpenseChart) incomeExpenseChart.destroy();
+            incomeExpenseChart = new Chart(ctx, {
+                type: 'bar', data: { labels: labels, datasets: [
+                    { label: 'Pemasukan', data: incomeData, backgroundColor: 'var(--income-color)' },
+                    { label: 'Pengeluaran (A)', data: expenseDataA, backgroundColor: 'var(--scenario-a-color)' },
+                    { label: 'Pengeluaran (B)', data: expenseDataB, backgroundColor: 'var(--scenario-b-color)' }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Pemasukan vs. Pengeluaran Tahunan' }}, scales: { x: { stacked: false }, y: { stacked: false }}}
+            });
+        }
+
+        function renderInvestmentAssetChart(labels, investmentDataA, propertyDataB) {
+            const ctx = document.getElementById('investmentAssetChart').getContext('2d');
+            if (investmentAssetChart) investmentAssetChart.destroy();
+            investmentAssetChart = new Chart(ctx, {
+                type: 'line', data: { labels: labels, datasets: [
+                    { label: 'Nilai Investasi (A)', data: investmentDataA, borderColor: 'var(--scenario-a-color)', fill: false, tension: 0.1 },
+                    { label: 'Nilai Properti (B)', data: propertyDataB, borderColor: 'var(--scenario-b-color)', fill: false, tension: 0.1 }
+                ]},
+                options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Pertumbuhan Nilai Investasi vs. Properti' }}}
             });
         }
         
@@ -500,8 +512,7 @@
             const summaryEl = document.getElementById('summary-text');
             const diff = lastResults.totalAsetB - lastResults.totalAsetA;
             if (isNaN(diff) || !isFinite(diff) || lastResults.totalAsetA === 0) {
-                 summaryEl.innerHTML = "Silakan sesuaikan parameter untuk melihat hasil.";
-                 return;
+                 summaryEl.innerHTML = "Silakan sesuaikan parameter untuk melihat hasil."; return;
             }
             const percentageDiff = ((diff / lastResults.totalAsetA) * 100).toFixed(0);
 
@@ -529,8 +540,7 @@
             if (Object.keys(lastResults).length === 0) return;
             const repairCost = 15000000;
             const newTotalAssetB = lastResults.totalAsetB - repairCost;
-            alert(`UJI STRES: Biaya Perbaikan Rumah\n\n` +
-                  `Biaya perbaikan Rp 15 juta akan mengurangi total aset Skenario B menjadi ${formatCurrency(newTotalAssetB)}.`);
+            alert(`UJI STRES: Biaya Perbaikan Rumah\n\n` + `Biaya perbaikan Rp 15 juta akan mengurangi total aset Skenario B menjadi ${formatCurrency(newTotalAssetB)}.`);
         }
 
         function stressTestMarketDown() {
@@ -538,17 +548,13 @@
             const marketDrop = 0.10;
             const loss = lastResults.alokasiInvestasi * marketDrop;
             const newTotalAssetA = lastResults.totalAsetA - loss;
-             alert(`UJI STRES: Pasar Investasi Turun 10%\n\n` +
-                  `Penurunan pasar akan mengurangi nilai aset Skenario A sekitar ${formatCurrency(loss)}, menjadi ${formatCurrency(newTotalAssetA)}.`);
+             alert(`UJI STRES: Pasar Investasi Turun 10%\n\n` + `Penurunan pasar akan mengurangi nilai aset Skenario A sekitar ${formatCurrency(loss)}, menjadi ${formatCurrency(newTotalAssetA)}.`);
         }
         
-        // --- EVENT LISTENERS for all inputs to trigger recalculation ---
+        // --- EVENT LISTENERS ---
         const allInputs = document.querySelectorAll('#input-panel input');
-        allInputs.forEach(input => {
-            input.addEventListener('input', calculateAndDisplayResults);
-        });
-
-        document.getElementById('calculateBtn').addEventListener('click', calculateAndDisplayResults); // Keep button for explicit action
+        allInputs.forEach(input => { input.addEventListener('input', calculateAndDisplayResults); });
+        document.getElementById('calculateBtn').addEventListener('click', calculateAndDisplayResults);
         document.getElementById('stressNoIncome').addEventListener('click', stressTestNoIncome);
         document.getElementById('stressRepairs').addEventListener('click', stressTestRepairs);
         document.getElementById('stressMarketDown').addEventListener('click', stressTestMarketDown);
